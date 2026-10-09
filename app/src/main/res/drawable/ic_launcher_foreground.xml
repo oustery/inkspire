@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Centered Tattoo Quill / Needle & Geometric Diamond Motif -->
+    <!-- Safe zone 66dp: centered around 54,54 -->
+    <!-- Outer Diamond Aura -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#66E5B54F"
+        android:strokeWidth="1.5"
+        android:pathData="M54,26 L76,54 L54,82 L32,54 Z" />
+
+    <!-- Center Tattoo Pen / Dagger / Needle Silhouette -->
+    <!-- Blade/Needle Tip -->
+    <path
+        android:fillColor="#E5B54F"
+        android:pathData="M54,23 L59,38 L54,85 L49,38 Z" />
+
+    <!-- Grip & Wings / Crossguard -->
+    <path
+        android:fillColor="#F3D188"
+        android:pathData="M40,42 L54,34 L68,42 L58,47 L54,45 L50,47 Z" />
+
+    <!-- Ink droplets / Stars -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,31 L55.5,35 L59.5,36.5 L55.5,38 L54,42 L52.5,38 L48.5,36.5 L52.5,35 Z" />
+
+    <path
+        android:fillColor="#E5B54F"
+        android:pathData="M54,78 L56,81 L54,85 L52,81 Z" />
+        
+    <!-- Orbital decorative dots -->
+    <path
+        android:fillColor="#E5B54F"
+        android:pathData="M32,54 A2,2 0 1,1 32,50 A2,2 0 1,1 32,54 Z" />
+    <path
+        android:fillColor="#E5B54F"
+        android:pathData="M76,54 A2,2 0 1,1 76,50 A2,2 0 1,1 76,54 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,20 A2,2 0 1,1 54,16 A2,2 0 1,1 54,20 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,92 A2,2 0 1,1 54,88 A2,2 0 1,1 54,92 Z" />
+</vector>
