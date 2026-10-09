@@ -23,7 +23,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Assignment
+import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.material.icons.filled.History
@@ -331,7 +331,7 @@ fun BoardsScreen(
                                 Row {
                                     IconButton(onClick = { specTattooId = tat?.id }) {
                                         Icon(
-                                            imageVector = Icons.Default.Assignment,
+                                            imageVector = Icons.AutoMirrored.Filled.Assignment,
                                             contentDescription = "ТЗ мастеру",
                                             tint = MaterialTheme.colorScheme.primary
                                         )

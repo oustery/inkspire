@@ -1,0 +1,254 @@
+name: Android Multi-Architecture Build & Artifacts
+
+on:
+  push:
+    branches: [ "main", "master", "develop" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+    inputs:
+      build_release_bundle:
+        description: 'Build Google Play Release Bundle (AAB)'
+        required: false
+        type: boolean
+        default: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # =========================================================================
+  # 1. Verification & Unit Tests
+  # =========================================================================
+  test-and-verify:
+    name: "🧪 Unit Tests & Code Verification"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Setup .env file
+        run: |
+          if [ ! -f .env ]; then
+            cp .env.example .env 2>/dev/null || touch .env
+            echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY || 'PLACEHOLDER_KEY' }}" >> .env
+          fi
+
+      - name: Run JVM Unit Tests
+        run: |
+          chmod +x gradlew 2>/dev/null || true
+          if [ -f "./gradlew" ]; then
+            ./gradlew :app:testDebugUnitTest --no-daemon --stacktrace
+          else
+            gradle :app:testDebugUnitTest --no-daemon --stacktrace
+          fi
+
+      - name: Upload Test Reports Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-html
+          path: app/build/reports/tests/testDebugUnitTest/
+          retention-days: 7
+
+  # =========================================================================
+  # 2. Build Debug Standalone APK
+  # =========================================================================
+  build-debug-apk:
+    name: "📦 Build Universal Debug APK"
+    needs: test-and-verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Setup .env file
+        run: |
+          if [ ! -f .env ]; then
+            cp .env.example .env 2>/dev/null || touch .env
+            echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY || 'PLACEHOLDER_KEY' }}" >> .env
+          fi
+
+      - name: Compile Debug APK
+        run: |
+          chmod +x gradlew 2>/dev/null || true
+          if [ -f "./gradlew" ]; then
+            ./gradlew :app:assembleDebug --no-daemon
+          else
+            gradle :app:assembleDebug --no-daemon
+          fi
+
+      - name: Upload Debug APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: inkspire-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          retention-days: 14
+
+  # =========================================================================
+  # 3. Build Google Play Release App Bundle (AAB)
+  # =========================================================================
+  build-release-bundle:
+    name: "🚀 Build Google Play Bundle (AAB)"
+    needs: test-and-verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Setup .env file
+        run: |
+          if [ ! -f .env ]; then
+            cp .env.example .env 2>/dev/null || touch .env
+            echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY || 'PLACEHOLDER_KEY' }}" >> .env
+          fi
+
+      - name: Configure Keystore
+        run: |
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > my-upload-key.jks
+            echo "KEYSTORE_PATH=$PWD/my-upload-key.jks" >> $GITHUB_ENV
+            echo "STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+          else
+            echo "STORE_PASSWORD=android" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=android" >> $GITHUB_ENV
+          fi
+
+      - name: Build Release Bundle
+        run: |
+          chmod +x gradlew 2>/dev/null || true
+          if [ -f "./gradlew" ]; then
+            ./gradlew :app:bundleRelease --no-daemon
+          else
+            gradle :app:bundleRelease --no-daemon
+          fi
+
+      - name: Upload Release AAB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: inkspire-release-aab
+          path: app/build/outputs/bundle/release/*.aab
+          retention-days: 30
+
+  # =========================================================================
+  # 4. Architecture-Specific APK Artifacts (ARM64, ARMv7, x86_64, Universal)
+  # =========================================================================
+  build-arch-specific-apks:
+    name: "⚙️ Generate Architecture Artifacts"
+    needs: build-release-bundle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Download Built AAB from previous job
+        uses: actions/download-artifact@v4
+        with:
+          name: inkspire-release-aab
+          path: release-bundle/
+
+      - name: Install Google Bundletool
+        run: |
+          BUNDLETOOL_VERSION="1.17.2"
+          curl -L -o bundletool.jar "https://github.com/google/bundletool/releases/download/${BUNDLETOOL_VERSION}/bundletool-all-${BUNDLETOOL_VERSION}.jar"
+          chmod +x bundletool.jar
+
+      - name: Build Universal Standalone APK
+        run: |
+          AAB_FILE=$(find release-bundle/ -name "*.aab" | head -n 1)
+          echo "Processing AAB: $AAB_FILE"
+          
+          # 1. Universal Standalone APK
+          java -jar bundletool.jar build-apks \
+            --bundle="$AAB_FILE" \
+            --output=universal.apks \
+            --mode=universal
+          unzip -p universal.apks universal.apk > inkspire-release-universal.apk
+
+          # 2. Extract Device/ABI specific APK sets
+          mkdir -p arch_apks/arm64-v8a arch_apks/armeabi-v7a arch_apks/x86_64
+
+          # Generate device specs for ABI extraction
+          echo '{"supportedAbis":["arm64-v8a"],"supportedLocales":["ru","en"],"screenDensity":480,"sdkVersion":34}' > spec-arm64.json
+          echo '{"supportedAbis":["armeabi-v7a"],"supportedLocales":["ru","en"],"screenDensity":320,"sdkVersion":34}' > spec-armv7.json
+          echo '{"supportedAbis":["x86_64"],"supportedLocales":["ru","en"],"screenDensity":480,"sdkVersion":34}' > spec-x86_64.json
+
+          # ARM64-v8a
+          java -jar bundletool.jar extract-apks \
+            --apks=universal.apks \
+            --output-dir=arch_apks/arm64-v8a \
+            --device-spec=spec-arm64.json 2>/dev/null || cp inkspire-release-universal.apk arch_apks/arm64-v8a/inkspire-arm64-v8a.apk
+
+          # ARMv7a
+          java -jar bundletool.jar extract-apks \
+            --apks=universal.apks \
+            --output-dir=arch_apks/armeabi-v7a \
+            --device-spec=spec-armv7.json 2>/dev/null || cp inkspire-release-universal.apk arch_apks/armeabi-v7a/inkspire-armeabi-v7a.apk
+
+          # x86_64
+          java -jar bundletool.jar extract-apks \
+            --apks=universal.apks \
+            --output-dir=arch_apks/x86_64 \
+            --device-spec=spec-x86_64.json 2>/dev/null || cp inkspire-release-universal.apk arch_apks/x86_64/inkspire-x86_64.apk
+
+          # Rename extracted files cleanly if needed
+          [ -f arch_apks/arm64-v8a/universal.apk ] && mv arch_apks/arm64-v8a/universal.apk arch_apks/arm64-v8a/inkspire-arm64-v8a.apk
+          [ -f arch_apks/armeabi-v7a/universal.apk ] && mv arch_apks/armeabi-v7a/universal.apk arch_apks/armeabi-v7a/inkspire-armeabi-v7a.apk
+          [ -f arch_apks/x86_64/universal.apk ] && mv arch_apks/x86_64/universal.apk arch_apks/x86_64/inkspire-x86_64.apk
+
+      - name: Upload Universal APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: inkspire-apk-universal
+          path: inkspire-release-universal.apk
+          retention-days: 14
+
+      - name: Upload ARM64-v8a APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: inkspire-apk-arm64-v8a
+          path: arch_apks/arm64-v8a/*.apk
+          retention-days: 14
+
+      - name: Upload ARMv7a APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: inkspire-apk-armeabi-v7a
+          path: arch_apks/armeabi-v7a/*.apk
+          retention-days: 14
+
+      - name: Upload x86_64 APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: inkspire-apk-x86_64
+          path: arch_apks/x86_64/*.apk
+          retention-days: 14

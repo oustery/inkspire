@@ -21,7 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Assignment
+import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.CenterFocusStrong
@@ -270,7 +270,7 @@ fun DetailScreen(
                     .height(52.dp)
                     .testTag("detail_spec_sheet_button")
             ) {
-                Icon(imageVector = Icons.Default.Assignment, contentDescription = null)
+                Icon(imageVector = Icons.AutoMirrored.Filled.Assignment, contentDescription = null)
                 Spacer(modifier = Modifier.width(6.dp))
                 Text("ТЗ мастеру")
             }
