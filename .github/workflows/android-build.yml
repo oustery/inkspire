@@ -35,11 +35,25 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
-      - name: Setup .env file
+      - name: Setup .env and Firebase mock config
         run: |
           if [ ! -f .env ]; then
             cp .env.example .env 2>/dev/null || touch .env
             echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY || 'PLACEHOLDER_KEY' }}" >> .env
+          fi
+          if [ ! -f app/google-services.json ]; then
+            cat << 'EOF' > app/google-services.json
+{
+  "project_info": { "project_number": "1234567890", "project_id": "inkspire-ci" },
+  "client": [{
+    "client_info": { "mobilesdk_app_id": "1:1234567890:android:ci", "android_client_info": { "package_name": "com.aistudio.inkspire.wqptkz" } },
+    "oauth_client": [],
+    "api_key": [{ "current_key": "dummy_key" }],
+    "services": { "analytics_service": { "status": 1 } }
+  }],
+  "configuration_version": "1"
+}
+EOF
           fi
 
       - name: Run JVM Unit Tests
@@ -77,11 +91,25 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
-      - name: Setup .env file
+      - name: Setup .env and Firebase mock config
         run: |
           if [ ! -f .env ]; then
             cp .env.example .env 2>/dev/null || touch .env
             echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY || 'PLACEHOLDER_KEY' }}" >> .env
+          fi
+          if [ ! -f app/google-services.json ]; then
+            cat << 'EOF' > app/google-services.json
+{
+  "project_info": { "project_number": "1234567890", "project_id": "inkspire-ci" },
+  "client": [{
+    "client_info": { "mobilesdk_app_id": "1:1234567890:android:ci", "android_client_info": { "package_name": "com.aistudio.inkspire.wqptkz" } },
+    "oauth_client": [],
+    "api_key": [{ "current_key": "dummy_key" }],
+    "services": { "analytics_service": { "status": 1 } }
+  }],
+  "configuration_version": "1"
+}
+EOF
           fi
 
       - name: Compile Debug APK
@@ -118,11 +146,25 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
-      - name: Setup .env file
+      - name: Setup .env and Firebase mock config
         run: |
           if [ ! -f .env ]; then
             cp .env.example .env 2>/dev/null || touch .env
             echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY || 'PLACEHOLDER_KEY' }}" >> .env
+          fi
+          if [ ! -f app/google-services.json ]; then
+            cat << 'EOF' > app/google-services.json
+{
+  "project_info": { "project_number": "1234567890", "project_id": "inkspire-ci" },
+  "client": [{
+    "client_info": { "mobilesdk_app_id": "1:1234567890:android:ci", "android_client_info": { "package_name": "com.aistudio.inkspire.wqptkz" } },
+    "oauth_client": [],
+    "api_key": [{ "current_key": "dummy_key" }],
+    "services": { "analytics_service": { "status": 1 } }
+  }],
+  "configuration_version": "1"
+}
+EOF
           fi
 
       - name: Configure Keystore
