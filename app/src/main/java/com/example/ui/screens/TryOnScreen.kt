@@ -8,6 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -124,6 +125,28 @@ fun TryOnScreen(
 
     // Blend mode (Multiply for realistic skin ink embedding, Darken, or Normal)
     var selectedBlendMode by remember { mutableStateOf(BlendMode.Multiply) }
+
+    // Skin Tone Options for anatomical templates
+    val skinTones = remember {
+        listOf(
+            Triple("Светлый", Color(0xFFF7D9C4), Color(0xFFE2B89D)),
+            Triple("Нейтральный", Color(0xFFE4BC9E), Color(0xFFC79A78)),
+            Triple("Загорелый", Color(0xFFC69068), Color(0xFFA0704C)),
+            Triple("Смуглый", Color(0xFF8D5537), Color(0xFF603822))
+        )
+    }
+    var selectedSkinToneIndex by remember { mutableStateOf(1) }
+
+    // Ink Palette Options
+    val inkColors = remember {
+        listOf(
+            Pair("Черный уголь", Color(0xFF161517)),
+            Pair("Глубокий индиго", Color(0xFF1E2838)),
+            Pair("Алый кармин", Color(0xFF991B1B)),
+            Pair("Белый контур", Color(0xFFF8FAFC))
+        )
+    }
+    var selectedInkColorIndex by remember { mutableStateOf(0) }
 
     // AI Analysis State
     var isAiAnalyzing by remember { mutableStateOf(false) }
@@ -387,7 +410,9 @@ fun TryOnScreen(
             } else {
                 BodyTemplateCanvas(
                     zone = selectedZone,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    skinTone = skinTones[selectedSkinToneIndex].second,
+                    skinShadow = skinTones[selectedSkinToneIndex].third
                 )
             }
 
@@ -420,9 +445,9 @@ fun TryOnScreen(
                         TattooArtRenderer(
                             patternType = tattoo.artPatternType,
                             modifier = Modifier.fillMaxSize(),
-                            inkColor = Color(0xFF161517),
+                            inkColor = inkColors[selectedInkColorIndex].second,
                             accentColor = Color(0xFFE5B54F),
-                            blendMode = selectedBlendMode,
+                            blendMode = if (selectedInkColorIndex == 3) BlendMode.Screen else selectedBlendMode,
                             alpha = opacity
                         )
                     }
@@ -538,11 +563,16 @@ fun TryOnScreen(
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.border(
-                                1.dp,
-                                MaterialTheme.colorScheme.primary,
-                                RoundedCornerShape(6.dp)
-                            ).padding(horizontal = 6.dp, vertical = 2.dp)
+                            modifier = Modifier
+                                .border(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.primary,
+                                    RoundedCornerShape(6.dp)
+                                )
+                                .clickable {
+                                    selectedBlendMode = if (selectedBlendMode == BlendMode.Multiply) BlendMode.SrcOver else BlendMode.Multiply
+                                }
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
                         )
                     }
                 }
@@ -557,6 +587,66 @@ fun TryOnScreen(
                     ),
                     modifier = Modifier.height(20.dp)
                 )
+
+                // Skin Tone Selector (for template mode)
+                if (selectedTab == 0) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Фототип кожи:",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            skinTones.forEachIndexed { index, tone ->
+                                Box(
+                                    modifier = Modifier
+                                        .size(22.dp)
+                                        .clip(CircleShape)
+                                        .background(tone.second)
+                                        .border(
+                                            width = if (selectedSkinToneIndex == index) 2.dp else 1.dp,
+                                            color = if (selectedSkinToneIndex == index) MaterialTheme.colorScheme.primary else Color.DarkGray,
+                                            shape = CircleShape
+                                        )
+                                        .clickable { selectedSkinToneIndex = index }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Ink Palette Selector
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Оттенок пигмента:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        inkColors.forEachIndexed { index, ink ->
+                            Box(
+                                modifier = Modifier
+                                    .size(22.dp)
+                                    .clip(CircleShape)
+                                    .background(ink.second)
+                                    .border(
+                                        width = if (selectedInkColorIndex == index) 2.dp else 1.dp,
+                                        color = if (selectedInkColorIndex == index) MaterialTheme.colorScheme.primary else Color.Gray,
+                                        shape = CircleShape
+                                    )
+                                    .clickable { selectedInkColorIndex = index }
+                            )
+                        }
+                    }
+                }
 
                 // Approach 2: AI Analysis & Master Spec Bar
                 Row(
